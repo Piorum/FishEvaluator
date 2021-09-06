@@ -1,16 +1,16 @@
 # bot.py
 import os
+import math
 import uuid
-import requests
 import shutil
 import discord
-import math
+import requests
 import pyautogui
-from discord.ext import commands
-from dotenv import load_dotenv
 from PIL import Image
-from pytesseract import *
 from pathlib import Path
+from pytesseract import *
+from dotenv import load_dotenv
+from discord.ext import commands
 pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 
@@ -26,9 +26,11 @@ async def on_ready():
     
 @client.command()
 async def leaderboardreset(ctx):
+    global owners
     global lbr
     lbr = 0
-    if str(ctx.author) == 'Piorum#0001':
+    owners = ['Piorum#0001', 'gamergunk_tv#3174', 'Seever#1775']
+    if str(ctx.author) in owners:
         await ctx.send('Valid user send .CONFRIM to reset')
         lbr = 1
     else: 
@@ -38,7 +40,8 @@ async def leaderboardreset(ctx):
         
 @client.command()
 async def CONFIRM(ctx):
-        if str(ctx.author) == 'Piorum#0001':
+        global owners
+        if str(ctx.author) in owners:
             global lbr
             if lbr == 1:
                 await ctx.send('Reset Successful')
