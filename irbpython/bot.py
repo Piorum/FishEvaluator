@@ -23,14 +23,15 @@ client = commands.Bot(command_prefix='.', help_command=None)
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="gamergunk_tv .help"))
-    
+
+global admin
+admin = ['Piorum#0001', 'gamergunk_tv#3174', 'Seever#1775']
 @client.command()
 async def leaderboardreset(ctx):
-    global owners
+    global admin
     global lbr
     lbr = 0
-    owners = ['Piorum#0001', 'gamergunk_tv#3174', 'Seever#1775']
-    if str(ctx.author) in owners:
+    if str(ctx.author) in admin:
         await ctx.send('Valid user send .CONFRIM to reset')
         lbr = 1
     else: 
@@ -40,8 +41,8 @@ async def leaderboardreset(ctx):
         
 @client.command()
 async def CONFIRM(ctx):
-        global owners
-        if str(ctx.author) in owners:
+        global admin
+        if str(ctx.author) in admin:
             global lbr
             if lbr == 1:
                 await ctx.send('Reset Successful')
@@ -319,5 +320,51 @@ async def submit(ctx):
             await ctx.send('First place! This spot is eligible for prizes!')
         elif placing == 0:
             await ctx.send('Rarity not elligible for prizes, if you think this is an eror apply for human verification')
+
+@client.command()
+async def invalidate(ctx, *, msg):
+    global admin
+    if str(ctx.author) in admin:
+        Rarity = str(msg.split()[0])
+        Place = str(msg.split()[1])
+        Rarities = ['Uncommon', 'Rare', 'Legendary']
+        if Rarity in Rarities:
+            file1 = open('Scores/' + Rarity + '/First.txt', 'r')
+            file2 = open('Scores/' + Rarity + '/Second.txt', 'r')
+            file3 = open('Scores/' + Rarity + '/Third.txt', 'r')
+            file1str = file1.read()
+            file2str = file2.read()
+            file3str = file3.read()
+            file1.close
+            file2.close
+            file3.close
+            file1 = open('Scores/' + Rarity + '/First.txt', 'w')
+            file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
+            file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+            if Place == 'First':
+                file1.write(file2str)
+                file2.write(file3str)
+                file3.write('0 Nobody')
+                await ctx.send('Invalidated ' + Rarity + ' First Place.')
+            elif Place == 'Second':
+                file1.write(file1str)
+                file2.write(file3str)
+                file3.write('0 Nobody')
+                await ctx.send('Invalidated ' + Rarity + ' Second Place.')
+            elif Place == 'Third':
+                file1.write(file1str)
+                file2.write(file2str)
+                file3.write('0 Nobody')
+                await ctx.send('Invalidated ' + Rarity + ' Third Place.')
+            else:
+                await ctx.send('Invalid Place')
+            file1.close
+            file2.close
+            file3.close
+        else:
+         await ctx.send('Invalid Rarity')
+        
+    else:
+        await ctx.send('INVALID USER, LOCKDOWN COMMENCING, SENDING NUKES, USER BANNED') 
 
 client.run(TOKEN)
