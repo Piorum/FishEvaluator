@@ -245,6 +245,11 @@ async def submit(ctx):
                         fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
                         fileb.write('\n' + str(file3str))
                         fileb.close()
+                    elif float(file3score) == float(filescore):
+                        file4 = open('Scores/' + Rarity + '/Overflow.txt', 'a')
+                        file4.write(str(filescore) + ' ' + str(sender) + '\n')
+                        placing = 5
+                        file4.close()
                 else:
                     if float(file1score) < float(filescore):
                         file1 = open('Scores/' + Rarity + '/First.txt', 'w')
@@ -273,6 +278,11 @@ async def submit(ctx):
                         fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
                         fileb.write('\n' + str(file3str))
                         fileb.close()
+                    elif float(file3score) == float(filescore):
+                        file4 = open('Scores/' + Rarity + '/Overflow.txt', 'a')
+                        file4.write(str(filescore) + ' ' + str(sender) + '\n')
+                        placing = 5
+                        file4.close()
                     else:
                         placing = 4
                     
@@ -310,7 +320,9 @@ async def submit(ctx):
             checkscore(0, 'Trash')
 
     
-        if placing == 4:
+        if placing == 5:
+            await ctx.send("Tied for 3rd added to overflow")
+        elif placing == 4:
             await ctx.send("Didn't place, if you think this is an error apply for human verification")
         elif placing == 3:
             await ctx.send('Third place!')
@@ -365,6 +377,21 @@ async def invalidate(ctx, *, msg):
          await ctx.send('Invalid Rarity')
         
     else:
-        await ctx.send('INVALID USER, LOCKDOWN COMMENCING, SENDING NUKES, USER BANNED') 
+        await ctx.send('INVALID USER, LOCKDOWN COMMENCING, SENDING NUKES, USER BANNED')
+
+@client.command()
+async def overflowleaderboard(ctx, *, msg):
+        Rarity = str(msg.split()[0])
+        Rarities = ['Uncommon', 'Rare', 'Legendary']
+        if Rarity in Rarities:
+            file = open('Scores/' + Rarity + '/Overflow.txt', 'r')
+            filestr = str(file.read())
+            if filestr != '':
+                await ctx.send('```diff\n- ' + Rarity + ' -\n' + filestr + '```')
+            else:
+                await ctx.send('Overflow file empty.')
+            file.close()
+        else:
+            await ctx.send('Invalid Rarity')
 
 client.run(TOKEN)
