@@ -1,5 +1,6 @@
 # bot.py
 import os
+import cv2
 import math
 import uuid
 import shutil
@@ -90,179 +91,165 @@ async def leaderboard(ctx):
 async def help(ctx):
     await ctx.send(".submit - Send this command with an attachment to submit an image.\n.leaderboard - Shows top 3 competitors in all categories.")
 @client.command()
-async def submit(ctx):
-    try:
-        url = ctx.message.attachments[0].url
-    except IndexError:
-        print("Error: No attachments")
-        await ctx.send("No attachments detected!")
-    else:
-        if url[0:26] == "https://cdn.discordapp.com":
-            r = requests.get(url, stream=True)
-            imageName = '1.png'
-            with open(imageName, 'wb') as out_file:
-                shutil.copyfileobj(r.raw, out_file)
-                
-        imgt = Image.open('1.png')
-        width, height = imgt.size
-        aspect = width / float(height)
-        ideal_width = 1920
-        ideal_height = 1080
-        ideal_aspect = ideal_width / float(ideal_height)
-        if aspect > ideal_aspect:
-            new_width = int(ideal_aspect * height)
-            offset = (width - new_width) / 2
-            resize = (offset, 0, width - offset, height)
-            imgt = imgt.crop(resize).resize((ideal_width, ideal_height), Image.ANTIALIAS)
-            imgt.show()
-        elif aspect < ideal_aspect:
-            new_height = int(width / ideal_aspect)
-            offset = (height - new_height) / 2
-            resize = (0, offset, width, height - offset)
-            imgt = imgt.crop(resize).resize((ideal_width, ideal_height), Image.ANTIALIAS)
-        width, height = imgt.size
-        left = width * float(0.592)
-        top = height * float(0.595)
-        right = width * float(0.844)
-        bottom = height * float(0.628)
-        img = imgt.crop((left, top, right, bottom))
-        new_size=tuple(8*x for x in img.size)
-        img = img.resize(new_size, Image.ANTIALIAS)
-        
-
+async def submit(ctx, *, msg=''):
+    global F
+    global BMI
+    global admin
+    global output
+    def extractdata(a, b, c):
         global F
         global BMI
         global output
-        output = pytesseract.image_to_string(img)
-        wn = len(output.split())
-        def extractdata(a, b, c):
-            global F
-            global BMI
-            global output
-            F = output.split()[a]
-            wt = output.split()[b]
-            wt = wt.rsplit('!')[0]
-            wt = wt.rsplit('i')[0]
-            wt = wt.rsplit('I')[0]
-            wt = wt.rsplit('l')[0]
-            W = wt.rsplit('|')[0]
-            W = W.replace(')', '.')
-            W = W.replace(',', '.')
-            ht = output.split()[c]
-            H = ht.rsplit('i')[0]
-            H = H.replace(')', '.')
-            H = H.replace(',', '.')
-            bmit = 42*float(W)/float(H)
-            bmit = bmit*100
-            bmit = math.trunc(bmit)
-            BMI = bmit/100
-        if wn == 3:
-            extractdata(0, 1, 2)
-        elif wn == 4:
-            extractdata(1, 2, 3)
-        elif wn == 5:
-            extractdata(2, 3, 4)
-        else:
-            BMI = 'Weight/Height Not Found'
-            Rarity = 'Rarity Not Found'
-            F = 'Fish Name Not Found'
-            
-        common = ['Bass', 'Bluefish', 'Flounder', 'Hake', 'Mackerel', 'Snapper', 'Salmon', 'Perch', 'Pike', 'Trout', 'Sunfish']
-        uncommon = ['Snail', 'Catfish', 'Clam', 'Cod', 'Halibut', 'Squid', 'Sturgeon', 'Tadpole', 'Glam']
-        rare = ['Fish', 'Eel', 'Frogfish', 'Madtom', 'Oysters', 'Paddlefish', 'Piranha', 'Sculpin', 'Shark', 'Stringray', 'Starfish', 'Swordfish']
-        legendary = ['Serpe', 'Albenaja', 'Aquanaja', 'Barb', 'Daemonaja', 'Guardfish', 'Gnufish', 'Mandje']
-        if F in common:
-            Rarity = 'Common'
-        elif F in uncommon:
-            Rarity = 'Uncommon'
-        elif F in rare:
-            Rarity = 'Rare'
-        elif F in legendary:
-            Rarity = 'Legendary'
-        elif F == 'Fish Name Not Found':
-            Rarity = 'Fish Name Not Found'
-        else:
-            Rarity = 'Trash'
-        await ctx.send('BMI: ' + str(BMI))
-        await ctx.send('Rarity: ' + str(Rarity))
+        print(output)
+        F = output.split()[a]
+        wt = output.split()[b]
+        wt = wt.rsplit('!')[0]
+        wt = wt.rsplit('i')[0]
+        wt = wt.rsplit('I')[0]
+        wt = wt.rsplit('l')[0]
+        W = wt.rsplit('|')[0]
+        W = W.replace(')', '.')
+        W = W.replace(',', '.')
+        ht = output.split()[c]
+        H = ht.rsplit('i')[0]
+        H = H.replace(')', '.')
+        H = H.replace(',', '.')
+        bmit = 42*float(W)/float(H)
+        bmit = bmit*100
+        bmit = math.trunc(bmit)
+        BMI = bmit/100
+    if msg != '':
         sendert = ctx.author
         sender = str(sendert).replace(' ', '_')
-        
-        def checkscore(filescore, Rarity):
-            global placing
-            if filescore == 0 and Rarity == 'Trash':
-                placing = 0
-            else:
-                file1 = open('Scores/' + Rarity + '/First.txt')
-                file2 = open('Scores/' + Rarity + '/Second.txt')
-                file3 = open('Scores/' + Rarity + '/Third.txt')
-                file1str = file1.read()
-                file2str = file2.read()
-                file3str = file3.read()
-                file1score = file1str.split()[0]
-                file1name = file1str.split()[1]
-                file2score = file2str.split()[0]
-                file2name = file2str.split()[1]
-                file3score = file3str.split()[0]
-                file3name = file3str.split()[1]
-                scoreholders = [file1name, file2name, file3name]
-                if str(sender) in str(scoreholders):
-                    if float(file1score) < float(filescore):
-                        if str(sender) == str(file1name):
-                            file1 = open('Scores/' + Rarity + '/First.txt', 'w')
-                            file1.write(str(filescore) + ' ' + str(sender))
-                            placing = 1
-                        elif str(sender) != str(file1name):
-                            file1 = open('Scores/' + Rarity + '/First.txt', 'w')
-                            file1.write(str(filescore) + ' ' + str(sender))
-                            placing = 1
-                            file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
-                            file2.write(str(file1score) + ' ' + str(file1name))
-                            if str(sender) != str(file2name):
-                                file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
-                                file3.write(str(file2score) + ' ' + str(file2name))
-                                fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
-                                fileb.write('\n' + str(file3str))
-                                fileb.close()
-                    elif float(file2score) < float(filescore):
-                        if str(sender) == str(file2name):
-                            file1 = open('Scores/' + Rarity + '/Second.txt', 'w')
-                            file1.write(str(filescore) + ' ' + str(sender))
-                            placing = 2
-                        elif str(sender) != str(file2name):
-                            file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
-                            file2.write(str(filescore) + ' ' + str(sender))
-                            placing = 2
-                            file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
-                            file3.write(str(file2score) + ' ' + str(file2name))
-                            fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
-                            fileb.write('\n' + str(file3str))
-                            fileb.close()
-                    elif float(file3score) < float(filescore):
-                        file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
-                        file3.write(str(filescore) + ' ' + str(sender))
-                        placing = 3
-                        fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
-                        fileb.write('\n' + str(file3str))
-                        fileb.close()
-                    elif float(file3score) == float(filescore):
-                        file4 = open('Scores/' + Rarity + '/Overflow.txt', 'a')
-                        file4.write(str(filescore) + ' ' + str(sender) + '\n')
-                        placing = 5
-                        file4.close()
+        if sender in admin:
+            if msg.split()[0] == 'Manual':
+                wn = len(msg.split())
+                if wn == 5:
+                    F = msg.split()[1]
+                    W = msg.split()[2]
+                    H = msg.split()[3]
+                    sender = str(msg.split()[4])
+                    output = (F + ' ' + W + 'lb ' + H + 'in')
+                    extractdata(0, 1, 2)
                 else:
-                    if float(file1score) < float(filescore):
+                    await ctx.send('Expected 5 Variables, Got ' + str(wn))
+        else:
+            await ctx.send('Submit with no message')
+    else:
+        sendert = ctx.author
+        sender = str(sendert).replace(' ', '_')
+        try:
+            url = ctx.message.attachments[0].url
+        except IndexError:
+            print("Error: No attachments")
+            await ctx.send("No attachments detected!")
+        else:
+            if url[0:26] == "https://cdn.discordapp.com":
+                r = requests.get(url, stream=True)
+                imageName = '1.png'
+                with open(imageName, 'wb') as out_file:
+                    shutil.copyfileobj(r.raw, out_file)
+                    
+            imgt = Image.open('1.png')
+            width, height = imgt.size
+            aspect = width / float(height)
+            ideal_width = 1920
+            ideal_height = 1080
+            ideal_aspect = ideal_width / float(ideal_height)
+            if aspect > ideal_aspect:
+                new_width = int(ideal_aspect * height)
+                offset = (width - new_width) / 2
+                resize = (offset, 0, width - offset, height)
+                imgt = imgt.crop(resize).resize((ideal_width, ideal_height), Image.ANTIALIAS)
+                imgt.show()
+            elif aspect < ideal_aspect:
+                new_height = int(width / ideal_aspect)
+                offset = (height - new_height) / 2
+                resize = (0, offset, width, height - offset)
+                imgt = imgt.crop(resize).resize((ideal_width, ideal_height), Image.ANTIALIAS)
+            width, height = imgt.size
+            left = width * float(0.592)
+            top = height * float(0.595)
+            right = width * float(0.844)
+            bottom = height * float(0.628)
+            img = imgt.crop((left, top, right, bottom))
+            new_size=tuple(8*x for x in img.size)
+            img = img.resize(new_size, Image.ANTIALIAS)
+            output = pytesseract.image_to_string(img)
+            wn = len(output.split())
+            if wn == 3:
+                extractdata(0, 1, 2)
+            elif wn == 4:
+                extractdata(1, 2, 3)
+            elif wn == 5:
+                extractdata(2, 3, 4)
+            else:
+                print('seen output: ' + output)
+                BMI = 'Weight/Height Not Found'
+                Rarity = 'Rarity Not Found'
+                F = 'Fish Name Not Found'
+                
+    common = ['Bass', 'Bluefish', 'Flounder', 'Hake', 'Mackerel', 'Snapper', 'Salmon', 'Perch', 'Pike', 'Trout', 'Sunfish']
+    uncommon = ['Snail', 'Catfish', 'Clam', 'Cod', 'Halibut', 'Squid', 'Sturgeon', 'Tadpole', 'Glam']
+    rare = ['Fish', 'Eel', 'Frogfish', 'Madtom', 'Oysters', 'Paddlefish', 'Piranha', 'Sculpin', 'Shark', 'Stringray', 'Starfish', 'Swordfish']
+    legendary = ['Serpe', 'Albenaja', 'Aquanaja', 'Barb', 'Daemonaja', 'Guardfish', 'Gnufish', 'Mandje']
+    if F in common:
+        Rarity = 'Common'
+    elif F in uncommon:
+        Rarity = 'Uncommon'
+    elif F in rare:
+        Rarity = 'Rare'
+    elif F in legendary:
+        Rarity = 'Legendary'
+    elif F == 'Fish Name Not Found':
+        Rarity = 'Fish Name Not Found'
+    else:
+        Rarity = 'Trash'
+    await ctx.send('BMI: ' + str(BMI))
+    await ctx.send('Rarity: ' + str(Rarity))
+    
+    def checkscore(filescore, Rarity):
+        global placing
+        if filescore == 0 and Rarity == 'Trash':
+            placing = 0
+        else:
+            file1 = open('Scores/' + Rarity + '/First.txt')
+            file2 = open('Scores/' + Rarity + '/Second.txt')
+            file3 = open('Scores/' + Rarity + '/Third.txt')
+            file1str = file1.read()
+            file2str = file2.read()
+            file3str = file3.read()
+            file1score = file1str.split()[0]
+            file1name = file1str.split()[1]
+            file2score = file2str.split()[0]
+            file2name = file2str.split()[1]
+            file3score = file3str.split()[0]
+            file3name = file3str.split()[1]
+            scoreholders = [file1name, file2name, file3name]
+            if str(sender) in str(scoreholders):
+                if float(file1score) < float(filescore):
+                    if str(sender) == str(file1name):
+                        file1 = open('Scores/' + Rarity + '/First.txt', 'w')
+                        file1.write(str(filescore) + ' ' + str(sender))
+                        placing = 1
+                    elif str(sender) != str(file1name):
                         file1 = open('Scores/' + Rarity + '/First.txt', 'w')
                         file1.write(str(filescore) + ' ' + str(sender))
                         placing = 1
                         file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
                         file2.write(str(file1score) + ' ' + str(file1name))
-                        file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
-                        file3.write(str(file2score) + ' ' + str(file2name))
-                        fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
-                        fileb.write('\n' + str(file3str))
-                        fileb.close()
-                    elif float(file2score) < float(filescore):
+                        if str(sender) != str(file2name):
+                            file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                            file3.write(str(file2score) + ' ' + str(file2name))
+                            fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                            fileb.write('\n' + str(file3str))
+                            fileb.close()
+                elif float(file2score) < float(filescore):
+                    if str(sender) == str(file2name):
+                        file1 = open('Scores/' + Rarity + '/Second.txt', 'w')
+                        file1.write(str(filescore) + ' ' + str(sender))
+                        placing = 2
+                    elif str(sender) != str(file2name):
                         file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
                         file2.write(str(filescore) + ' ' + str(sender))
                         placing = 2
@@ -271,67 +258,100 @@ async def submit(ctx):
                         fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
                         fileb.write('\n' + str(file3str))
                         fileb.close()
-                    elif float(file3score) < float(filescore):
-                        file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
-                        file3.write(str(filescore) + ' ' + str(sender))
-                        placing = 3
-                        fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
-                        fileb.write('\n' + str(file3str))
-                        fileb.close()
-                    elif float(file3score) == float(filescore):
-                        file4 = open('Scores/' + Rarity + '/Overflow.txt', 'a')
-                        file4.write(str(filescore) + ' ' + str(sender) + '\n')
-                        placing = 5
-                        file4.close()
-                    else:
-                        placing = 4
-                    
-        if Rarity == 'Legendary':
-            path_to_file = 'Scores/Legendary/' + str(sender)
-            path = Path(path_to_file)
-
-            if path.is_file():
-                file = open(str('Scores/Legendary/') + str(sender), "r")
-                scoret = file.read()
-                scoret = int(scoret) + 1
-                file.close()
-                file = open(str('Scores/Legendary/') + str(sender), "w")
-                score = str(scoret)
-                file.write(score)
-                file.close()
+                elif float(file3score) < float(filescore):
+                    file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                    file3.write(str(filescore) + ' ' + str(sender))
+                    placing = 3
+                    fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                    fileb.write('\n' + str(file3str))
+                    fileb.close()
+                elif float(file3score) == float(filescore):
+                    file4 = open('Scores/' + Rarity + '/Overflow.txt', 'a')
+                    file4.write(str(filescore) + ' ' + str(sender) + '\n')
+                    placing = 5
+                    file4.close()
             else:
-                file = open(str('Scores/Legendary/') + str(sender), "x")
-                file.close()
-                file = open(str('Scores/Legendary/') + str(sender), "w")
-                file.write('1')
-                file.close()
+                if float(file1score) < float(filescore):
+                    file1 = open('Scores/' + Rarity + '/First.txt', 'w')
+                    file1.write(str(filescore) + ' ' + str(sender))
+                    placing = 1
+                    file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
+                    file2.write(str(file1score) + ' ' + str(file1name))
+                    file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                    file3.write(str(file2score) + ' ' + str(file2name))
+                    fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                    fileb.write('\n' + str(file3str))
+                    fileb.close()
+                elif float(file2score) < float(filescore):
+                    file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
+                    file2.write(str(filescore) + ' ' + str(sender))
+                    placing = 2
+                    file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                    file3.write(str(file2score) + ' ' + str(file2name))
+                    fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                    fileb.write('\n' + str(file3str))
+                    fileb.close()
+                elif float(file3score) < float(filescore):
+                    file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                    file3.write(str(filescore) + ' ' + str(sender))
+                    placing = 3
+                    fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                    fileb.write('\n' + str(file3str))
+                    fileb.close()
+                elif float(file3score) == float(filescore):
+                    file4 = open('Scores/' + Rarity + '/Overflow.txt', 'a')
+                    file4.write(str(filescore) + ' ' + str(sender) + '\n')
+                    placing = 5
+                    file4.close()
+                else:
+                    placing = 4
+                
+    if Rarity == 'Legendary':
+        path_to_file = 'Scores/Legendary/' + str(sender)
+        path = Path(path_to_file)
 
+        if path.is_file():
             file = open(str('Scores/Legendary/') + str(sender), "r")
-            score = str(file.read())
-            checkscore(score, 'Legendary')
-        
-        elif Rarity == 'Rare':
-            checkscore(BMI, 'Rare')
+            scoret = file.read()
+            scoret = int(scoret) + 1
+            file.close()
+            file = open(str('Scores/Legendary/') + str(sender), "w")
+            score = str(scoret)
+            file.write(score)
+            file.close()
+        else:
+            file = open(str('Scores/Legendary/') + str(sender), "x")
+            file.close()
+            file = open(str('Scores/Legendary/') + str(sender), "w")
+            file.write('1')
+            file.close()
 
-        elif Rarity == 'Uncommon':
-            checkscore(BMI, 'Uncommon')
-
-        elif Rarity == 'Trash' or 'Common':
-            checkscore(0, 'Trash')
-
+        file = open(str('Scores/Legendary/') + str(sender), "r")
+        score = str(file.read())
+        checkscore(score, 'Legendary')
     
-        if placing == 5:
-            await ctx.send("Tied for 3rd added to overflow")
-        elif placing == 4:
-            await ctx.send("Didn't place, if you think this is an error apply for human verification")
-        elif placing == 3:
-            await ctx.send('Third place!')
-        elif placing == 2:
-            await ctx.send('Second place!')
-        elif placing == 1:
-            await ctx.send('First place! This spot is eligible for prizes!')
-        elif placing == 0:
-            await ctx.send('Rarity not elligible for prizes, if you think this is an eror apply for human verification')
+    elif Rarity == 'Rare':
+        checkscore(BMI, 'Rare')
+
+    elif Rarity == 'Uncommon':
+        checkscore(BMI, 'Uncommon')
+
+    elif Rarity == 'Trash' or 'Common':
+        checkscore(0, 'Trash')
+
+
+    if placing == 5:
+        await ctx.send("Tied for 3rd added to overflow")
+    elif placing == 4:
+        await ctx.send("Didn't place, if you think this is an error apply for human verification")
+    elif placing == 3:
+        await ctx.send('Third place!')
+    elif placing == 2:
+        await ctx.send('Second place!')
+    elif placing == 1:
+        await ctx.send('First place! This spot is eligible for prizes!')
+    elif placing == 0:
+        await ctx.send('Rarity not elligible for prizes, if you think this is an eror apply for human verification')
 
 @client.command()
 async def invalidate(ctx, *, msg):
