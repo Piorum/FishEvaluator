@@ -1,4 +1,3 @@
-# bot.py
 import os
 import cv2
 import math
@@ -12,6 +11,7 @@ from pathlib import Path
 from pytesseract import *
 from dotenv import load_dotenv
 from discord.ext import commands
+from discord.ext.commands import CommandNotFound
 pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 
@@ -26,55 +26,160 @@ async def on_ready():
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="gamergunk_tv .help"))
 
 global admin
-admin = ['Piorum#0001', 'gamergunk_tv#3174', 'Seever#1775']
+
+@client.command() 
+async def setup(ctx):
+    created = False
+    serverid = str(ctx.guild.id)
+    pathrarities = ['Legendary', 'Rare', 'Uncommon']
+    pathplaces = ['First', 'Second', 'Third', 'Backup', 'Overflow']
+    for rarity in pathrarities:
+        Dirpath = 'Scores/' + serverid + '/' + rarity
+        isDir = os.path.isdir(str(Dirpath))
+        if isDir == False:
+            os.makedirs(Dirpath)
+        for place in pathplaces:
+            path = 'Scores/' + serverid + '/' + rarity + '/' + place + '.txt.'
+            isFile = os.path.isfile(str(path))
+            if isFile == False:
+                file = open(str(path), 'x')
+                file.close()
+                file = open(str(path), 'w')
+                file.write('0 Nobody')
+        path = 'Scores/' + serverid + '/' + 'admins.txt'
+        isFile = os.path.isfile(str(path))
+        if isFile == False:
+            file = open(str(path), 'x')
+            created = True
+            file.close()
+            file = open(str(path), 'w')
+            file.write('Piorum#0001')
+            file.close()
+    if created == True:
+        await ctx.send('Setup Complete')
+    if created == False:
+        await ctx.send('Setup Already Performed')
+
+@client.command()
+async def addadmin(ctx, *, msg):
+    sendert = ctx.author
+    sender = str(sendert).replace(' ', '_')
+    global admin
+    file = open('Scores/' + str(ctx.guild.id) + '/admins.txt', 'r')
+    admin = str(file.read().split())
+    adminperm = ctx.author.guild_permissions.administrator
+    if adminperm == True:
+        dirpath = 'Scores/' + str(ctx.guild.id) + '/admins.txt'
+        isDir = os.path.isdir(dirpath)
+        if isDir == True:
+            file = open(dirpath, 'a')
+            file.write(sender + ' ')
+    if sender in admin:
+        msg = msg.replace('<@!', '')
+        msg = msg.replace('>', '')
+        try:
+            username = await client.fetch_user(msg)
+            username = str(username).replace(' ', '_')
+            file = open('Scores/' + str(ctx.guild.id) + '/admins.txt', 'a')
+            file.write(username + ' ')
+            file.close()
+            added = True
+        except:
+            username = msg
+            pass
+        if added == True:
+            await ctx.send('User added.')
+
+@client.command()
+async def adminhelp(ctx):
+    sendert = ctx.author
+    sender = str(sendert).replace(' ', '_')
+    global admin
+    file = open('Scores/' + str(ctx.guild.id) + '/admins.txt', 'r')
+    admin = str(file.read().split())
+    adminperm = ctx.author.guild_permissions.administrator
+    if adminperm == True:
+        dirpath = 'Scores/' + str(ctx.guild.id) + '/admins.txt'
+        isDir = os.path.isdir(dirpath)
+        if isDir == True:
+            file = open(dirpath, 'a')
+            file.write(sender + ' ')
+    if sender in admin:
+        await ctx.send('.leaderboardreset - Usage(.leaderboardreset)\n.addadmin - Usage(.addadmin @User)\n.submit Manual - Usage(.submit Manual Fishname Weight Length @User)\n---[Fishname must be last part of the name if two words EX: use Serpe for Abaia Serpe, Clam for Clam] \n.invalidate - Usage(.invalidate Rarity Placing)')
+    else:
+        await ctx.send('Not in admin list')
+    
+
 @client.command()
 async def leaderboardreset(ctx):
+    sendert = ctx.author
+    sender = str(sendert).replace(' ', '_')
     global admin
+    file = open('Scores/' + str(ctx.guild.id) + '/admins.txt', 'r')
+    admin = str(file.read().split())
+    adminperm = ctx.author.guild_permissions.administrator
+    if adminperm == True:
+        dirpath = 'Scores/' + str(ctx.guild.id) + '/admins.txt'
+        isDir = os.path.isdir(dirpath)
+        if isDir == True:
+            file = open(dirpath, 'a')
+            file.write(sender + ' ')
     global lbr
     lbr = 0
-    if str(ctx.author) in admin:
+    if sender in admin:
         await ctx.send('Valid user send .CONFRIM to reset')
         lbr = 1
     else: 
-        print(str(ctx.author) + ' UNAUTHORIZED USER ATTEMPTING LEADERBOARD RESET')
+        print(sender + ' UNAUTHORIZED USER ATTEMPTING LEADERBOARD RESET')
         await ctx.send('INVALID USER, LOCKDOWN COMMENCING, SENDING NUKES, USER BANNED')
 
         
 @client.command()
 async def CONFIRM(ctx):
-        global admin
-        if str(ctx.author) in admin:
-            global lbr
-            if lbr == 1:
-                await ctx.send('Reset Successful')
-                def overwrite(Rarity, Place):
-                    file = open("Scores/" + Rarity + '/' + Place + ".txt", "w")
-                    file.write('0 Nobody')
-                    file.close()
-                overwrite('Uncommon', 'First')
-                overwrite('Uncommon', 'Second')
-                overwrite('Uncommon', 'Third')
-                overwrite('Rare', 'First')
-                overwrite('Rare', 'Second')
-                overwrite('Rare', 'Third')
-                overwrite('Legendary', 'First')
-                overwrite('Legendary', 'Second')
-                overwrite('Legendary', 'Third')
-                lbr = 0
-            else:
-                await ctx.send('Please type .leaderboardreset first')
+    sendert = ctx.author
+    sender = str(sendert).replace(' ', '_')
+    global admin
+    file = open('Scores/' + str(ctx.guild.id) + '/admins.txt', 'r')
+    admin = str(file.read().split())
+    adminperm = ctx.author.guild_permissions.administrator
+    if adminperm == True:
+        dirpath = 'Scores/' + str(ctx.guild.id) + '/admins.txt'
+        isDir = os.path.isdir(dirpath)
+        if isDir == True:
+            file = open(dirpath, 'a')
+            file.write(sender + ' ')
+    if str(ctx.author) in admin:
+        global lbr
+        if lbr == 1:
+            await ctx.send('Reset Successful')
+            def overwrite(Rarity, Place):
+                file = open("Scores/" + str(ctx.guild.id) + '/' + Rarity + '/' + Place + ".txt", "w")
+                file.write('0 Nobody')
+                file.close()
+            overwrite('Uncommon', 'First')
+            overwrite('Uncommon', 'Second')
+            overwrite('Uncommon', 'Third')
+            overwrite('Rare', 'First')
+            overwrite('Rare', 'Second')
+            overwrite('Rare', 'Third')
+            overwrite('Legendary', 'First')
+            overwrite('Legendary', 'Second')
+            overwrite('Legendary', 'Third')
+            lbr = 0
+        else:
+            await ctx.send('Please type .leaderboardreset first')
 
 @client.command()
 async def leaderboard(ctx):
-    fileu1 = open("Scores/Uncommon/First.txt", "r")
-    fileu2 = open("Scores/Uncommon/Second.txt", "r")
-    fileu3 = open("Scores/Uncommon/Third.txt", "r")
-    filer1 = open("Scores/Rare/First.txt", "r")
-    filer2 = open("Scores/Rare/Second.txt", "r")
-    filer3 = open("Scores/Rare/Third.txt", "r")
-    filel1 = open("Scores/Legendary/First.txt", "r")
-    filel2 = open("Scores/Legendary/Second.txt", "r")
-    filel3 = open("Scores/Legendary/Third.txt", "r")
+    fileu1 = open("Scores/" + str(ctx.guild.id) + "/Uncommon/First.txt", "r")
+    fileu2 = open("Scores/" + str(ctx.guild.id) + "/Uncommon/Second.txt", "r")
+    fileu3 = open("Scores/" + str(ctx.guild.id) + "/Uncommon/Third.txt", "r")
+    filer1 = open("Scores/" + str(ctx.guild.id) + "/Rare/First.txt", "r")
+    filer2 = open("Scores/" + str(ctx.guild.id) + "/Rare/Second.txt", "r")
+    filer3 = open("Scores/" + str(ctx.guild.id) + "/Rare/Third.txt", "r")
+    filel1 = open("Scores/" + str(ctx.guild.id) + "/Legendary/First.txt", "r")
+    filel2 = open("Scores/" + str(ctx.guild.id) + "/Legendary/Second.txt", "r")
+    filel3 = open("Scores/" + str(ctx.guild.id) + "/Legendary/Third.txt", "r")
     await ctx.send('```diff\n' + '-LEGENDARY-\n' + str(filel1.read()) + '\n' + str(filel2.read()) + '\n' + str(filel3.read()) + '```')
     await ctx.send('```diff\n' + '-RARE-\n' + str(filer1.read()) + '\n' + str(filer2.read()) + '\n' + str(filer3.read()) + '```')
     await ctx.send('```diff\n' + '-UNCOMMON-\n' + str(fileu1.read()) + '\n' + str(fileu2.read()) + '\n' + str(fileu3.read()) + '```')
@@ -89,12 +194,23 @@ async def leaderboard(ctx):
     filel3.close
 @client.command()
 async def help(ctx):
-    await ctx.send(".submit - Send this command with an attachment to submit an image.\n.leaderboard - Shows top 3 competitors in all categories.")
+    await ctx.send(".submit - Send this command with an attachment to submit an image.\n.leaderboard - Shows top 3 competitors in all categories.\n.setup - Run this command to setup files for saving scores.\n.adminhelp - Help command for commands only usable by admins.")
 @client.command()
 async def submit(ctx, *, msg=''):
     global F
     global BMI
+    sendert = ctx.author
+    sender = str(sendert).replace(' ', '_')
     global admin
+    file = open('Scores/' + str(ctx.guild.id) + '/admins.txt', 'r')
+    admin = str(file.read().split())
+    adminperm = ctx.author.guild_permissions.administrator
+    if adminperm == True:
+        dirpath = 'Scores/' + str(ctx.guild.id) + '/admins.txt'
+        isDir = os.path.isdir(dirpath)
+        if isDir == True:
+            file = open(dirpath, 'a')
+            file.write(sender + ' ')
     global output
     def extractdata(a, b, c):
         global F
@@ -129,6 +245,9 @@ async def submit(ctx, *, msg=''):
                     W = msg.split()[2]
                     H = msg.split()[3]
                     sender = str(msg.split()[4])
+                    sender = sender.replace('<@!', '')
+                    sender = sender.replace('>', '')
+                    sender = await client.fetch_user(sender)
                     output = (F + ' ' + W + 'lb ' + H + 'in')
                     extractdata(0, 1, 2)
                 else:
@@ -191,7 +310,7 @@ async def submit(ctx, *, msg=''):
                 
     common = ['Bass', 'Bluefish', 'Flounder', 'Hake', 'Mackerel', 'Snapper', 'Salmon', 'Perch', 'Pike', 'Trout', 'Sunfish']
     uncommon = ['Snail', 'Catfish', 'Clam', 'Cod', 'Halibut', 'Squid', 'Sturgeon', 'Tadpole', 'Glam']
-    rare = ['Fish', 'Eel', 'Frogfish', 'Madtom', 'Oysters', 'Paddlefish', 'Piranha', 'Sculpin', 'Shark', 'Stringray', 'Starfish', 'Swordfish']
+    rare = ['Fish', 'Eel', 'Frogfish', 'Madtom', 'Oyster', 'Paddlefish', 'Piranha', 'Sculpin', 'Shark', 'Stringray', 'Starfish', 'Swordfish']
     legendary = ['Serpe', 'Albenaja', 'Aquanaja', 'Barb', 'Daemonaja', 'Guardfish', 'Gnufish', 'Mandje']
     if F in common:
         Rarity = 'Common'
@@ -205,17 +324,16 @@ async def submit(ctx, *, msg=''):
         Rarity = 'Fish Name Not Found'
     else:
         Rarity = 'Trash'
-    await ctx.send('BMI: ' + str(BMI))
-    await ctx.send('Rarity: ' + str(Rarity))
+    await ctx.send('BMI: ' + str(BMI) + '\nRarity: ' + str(Rarity))
     
     def checkscore(filescore, Rarity):
         global placing
         if filescore == 0 and Rarity == 'Trash':
             placing = 0
         else:
-            file1 = open('Scores/' + Rarity + '/First.txt')
-            file2 = open('Scores/' + Rarity + '/Second.txt')
-            file3 = open('Scores/' + Rarity + '/Third.txt')
+            file1 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/First.txt')
+            file2 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Second.txt')
+            file3 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Third.txt')
             file1str = file1.read()
             file2str = file2.read()
             file3str = file3.read()
@@ -229,77 +347,77 @@ async def submit(ctx, *, msg=''):
             if str(sender) in str(scoreholders):
                 if float(file1score) < float(filescore):
                     if str(sender) == str(file1name):
-                        file1 = open('Scores/' + Rarity + '/First.txt', 'w')
+                        file1 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/First.txt', 'w')
                         file1.write(str(filescore) + ' ' + str(sender))
                         placing = 1
                     elif str(sender) != str(file1name):
-                        file1 = open('Scores/' + Rarity + '/First.txt', 'w')
+                        file1 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/First.txt', 'w')
                         file1.write(str(filescore) + ' ' + str(sender))
                         placing = 1
-                        file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
+                        file2 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Second.txt', 'w')
                         file2.write(str(file1score) + ' ' + str(file1name))
                         if str(sender) != str(file2name):
-                            file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                            file3 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Third.txt', 'w')
                             file3.write(str(file2score) + ' ' + str(file2name))
-                            fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                            fileb = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Backup.txt', 'a')
                             fileb.write('\n' + str(file3str))
                             fileb.close()
                 elif float(file2score) < float(filescore):
                     if str(sender) == str(file2name):
-                        file1 = open('Scores/' + Rarity + '/Second.txt', 'w')
+                        file1 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Second.txt', 'w')
                         file1.write(str(filescore) + ' ' + str(sender))
                         placing = 2
                     elif str(sender) != str(file2name):
-                        file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
+                        file2 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Second.txt', 'w')
                         file2.write(str(filescore) + ' ' + str(sender))
                         placing = 2
-                        file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                        file3 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Third.txt', 'w')
                         file3.write(str(file2score) + ' ' + str(file2name))
-                        fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                        fileb = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Backup.txt', 'a')
                         fileb.write('\n' + str(file3str))
                         fileb.close()
                 elif float(file3score) < float(filescore):
-                    file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                    file3 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Third.txt', 'w')
                     file3.write(str(filescore) + ' ' + str(sender))
                     placing = 3
-                    fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                    fileb = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Backup.txt', 'a')
                     fileb.write('\n' + str(file3str))
                     fileb.close()
                 elif float(file3score) == float(filescore):
-                    file4 = open('Scores/' + Rarity + '/Overflow.txt', 'a')
+                    file4 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Overflow.txt', 'a')
                     file4.write(str(filescore) + ' ' + str(sender) + '\n')
                     placing = 5
                     file4.close()
             else:
                 if float(file1score) < float(filescore):
-                    file1 = open('Scores/' + Rarity + '/First.txt', 'w')
+                    file1 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/First.txt', 'w')
                     file1.write(str(filescore) + ' ' + str(sender))
                     placing = 1
-                    file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
+                    file2 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Second.txt', 'w')
                     file2.write(str(file1score) + ' ' + str(file1name))
-                    file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                    file3 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Third.txt', 'w')
                     file3.write(str(file2score) + ' ' + str(file2name))
-                    fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                    fileb = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Backup.txt', 'a')
                     fileb.write('\n' + str(file3str))
                     fileb.close()
                 elif float(file2score) < float(filescore):
-                    file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
+                    file2 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Second.txt', 'w')
                     file2.write(str(filescore) + ' ' + str(sender))
                     placing = 2
-                    file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                    file3 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Third.txt', 'w')
                     file3.write(str(file2score) + ' ' + str(file2name))
-                    fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                    fileb = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Backup.txt', 'a')
                     fileb.write('\n' + str(file3str))
                     fileb.close()
                 elif float(file3score) < float(filescore):
-                    file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+                    file3 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Third.txt', 'w')
                     file3.write(str(filescore) + ' ' + str(sender))
                     placing = 3
-                    fileb = open('Scores/' + Rarity + '/Backup.txt', 'a')
+                    fileb = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Backup.txt', 'a')
                     fileb.write('\n' + str(file3str))
                     fileb.close()
                 elif float(file3score) == float(filescore):
-                    file4 = open('Scores/' + Rarity + '/Overflow.txt', 'a')
+                    file4 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Overflow.txt', 'a')
                     file4.write(str(filescore) + ' ' + str(sender) + '\n')
                     placing = 5
                     file4.close()
@@ -307,26 +425,26 @@ async def submit(ctx, *, msg=''):
                     placing = 4
                 
     if Rarity == 'Legendary':
-        path_to_file = 'Scores/Legendary/' + str(sender)
+        path_to_file = 'Scores/' + str(ctx.guild.id) + '/Legendary/' + str(sender)
         path = Path(path_to_file)
 
         if path.is_file():
-            file = open(str('Scores/Legendary/') + str(sender), "r")
+            file = open(str('Scores/' + str(ctx.guild.id) + '/Legendary/') + str(sender), "r")
             scoret = file.read()
             scoret = int(scoret) + 1
             file.close()
-            file = open(str('Scores/Legendary/') + str(sender), "w")
+            file = open(str('Scores/' + str(ctx.guild.id) + '/Legendary/') + str(sender), "w")
             score = str(scoret)
             file.write(score)
             file.close()
         else:
-            file = open(str('Scores/Legendary/') + str(sender), "x")
+            file = open(str('Scores/' + str(ctx.guild.id) + '/Legendary/') + str(sender), "x")
             file.close()
-            file = open(str('Scores/Legendary/') + str(sender), "w")
+            file = open(str('Scores/' + str(ctx.guild.id) + '/Legendary/') + str(sender), "w")
             file.write('1')
             file.close()
 
-        file = open(str('Scores/Legendary/') + str(sender), "r")
+        file = open(str('Scores/' + str(ctx.guild.id) + '/Legendary/') + str(sender), "r")
         score = str(file.read())
         checkscore(score, 'Legendary')
     
@@ -355,24 +473,35 @@ async def submit(ctx, *, msg=''):
 
 @client.command()
 async def invalidate(ctx, *, msg):
+    sendert = ctx.author
+    sender = str(sendert).replace(' ', '_')
     global admin
+    file = open('Scores/' + str(ctx.guild.id) + '/admins.txt', 'r')
+    admin = str(file.read().split())
+    adminperm = ctx.author.guild_permissions.administrator
+    if adminperm == True:
+        dirpath = 'Scores/' + str(ctx.guild.id) + '/admins.txt'
+        isDir = os.path.isdir(dirpath)
+        if isDir == True:
+            file = open(dirpath, 'a')
+            file.write(sender + ' ')
     if str(ctx.author) in admin:
         Rarity = str(msg.split()[0])
         Place = str(msg.split()[1])
         Rarities = ['Uncommon', 'Rare', 'Legendary']
         if Rarity in Rarities:
-            file1 = open('Scores/' + Rarity + '/First.txt', 'r')
-            file2 = open('Scores/' + Rarity + '/Second.txt', 'r')
-            file3 = open('Scores/' + Rarity + '/Third.txt', 'r')
+            file1 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/First.txt', 'r')
+            file2 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Second.txt', 'r')
+            file3 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Third.txt', 'r')
             file1str = file1.read()
             file2str = file2.read()
             file3str = file3.read()
             file1.close
             file2.close
             file3.close
-            file1 = open('Scores/' + Rarity + '/First.txt', 'w')
-            file2 = open('Scores/' + Rarity + '/Second.txt', 'w')
-            file3 = open('Scores/' + Rarity + '/Third.txt', 'w')
+            file1 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/First.txt', 'w')
+            file2 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Second.txt', 'w')
+            file3 = open('Scores/' + str(ctx.guild.id) + '/' + Rarity + '/Third.txt', 'w')
             if Place == 'First':
                 file1.write(file2str)
                 file2.write(file3str)
@@ -404,7 +533,7 @@ async def overflowleaderboard(ctx, *, msg):
         Rarity = str(msg.split()[0])
         Rarities = ['Uncommon', 'Rare', 'Legendary']
         if Rarity in Rarities:
-            file = open('Scores/' + Rarity + '/Overflow.txt', 'r')
+            file = open('Scores/' + str(ctx.guild.id) + Rarity + '/Overflow.txt', 'r')
             filestr = str(file.read())
             if filestr != '':
                 await ctx.send('```diff\n- ' + Rarity + ' -\n' + filestr + '```')
@@ -413,5 +542,11 @@ async def overflowleaderboard(ctx, *, msg):
             file.close()
         else:
             await ctx.send('Invalid Rarity')
+            
+@client.event
+async def on_command_error(ctx, error):
+    if isinstance(error, CommandNotFound):
+        return
+    raise error
 
 client.run(TOKEN)
